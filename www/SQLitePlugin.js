@@ -36,11 +36,13 @@
 
   SQLitePlugin = function(openargs, openSuccess, openError) {
     var dbname;
+    var path;
     console.log("SQLitePlugin openargs: " + (JSON.stringify(openargs)));
     if (!(openargs && openargs['name'])) {
       throw new Error("Cannot create a SQLitePlugin instance without a db name");
     }
     dbname = openargs.name;
+    this.path = openargs.path;
     this.openargs = openargs;
     this.dbname = dbname;
     this.openSuccess = openSuccess;
@@ -406,19 +408,20 @@
       if (first.constructor === String) {
         openargs = {
           name: first
+          path: args[1]
         };
-        if (args.length >= 5) {
-          okcb = args[4];
-          if (args.length > 5) {
-            errorcb = args[5];
+        if (args.length >= 6) {
+          okcb = args[5];
+          if (args.length > 6) {
+            errorcb = args[6];
           }
         }
       } else {
         openargs = first;
-        if (args.length >= 2) {
-          okcb = args[1];
-          if (args.length > 2) {
-            errorcb = args[2];
+        if (args.length >= 3) {
+          okcb = args[2];
+          if (args.length > 3) {
+            errorcb = args[3];
           }
         }
       }
