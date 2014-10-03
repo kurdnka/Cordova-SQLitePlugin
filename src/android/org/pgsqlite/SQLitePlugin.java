@@ -193,7 +193,7 @@ public class SQLitePlugin extends CordovaPlugin {
     // LOCAL METHODS
     // --------------------------------------------------------------------------
 
-    private void startDatabase(String dbname, CallbackContext cbc) {
+    private void startDatabase(String dbname, String path, CallbackContext cbc) {
         // TODO: is it an issue that we can orphan an existing thread?  What should we do here?
         // If we re-use the existing DBRunner it might be in the process of closing...
         DBRunner r = dbrmap.get(dbname);
@@ -205,7 +205,7 @@ public class SQLitePlugin extends CordovaPlugin {
         	// than orphaning the old DBRunner.
             cbc.success();
         } else {
-            r = new DBRunner(dbname, cbc);
+            r = new DBRunner(dbname, path, cbc);
             dbrmap.put(dbname, r);
             this.cordova.getThreadPool().execute(r);
         }
@@ -215,7 +215,7 @@ public class SQLitePlugin extends CordovaPlugin {
      *
      * @param dbName   The name of the database file
      */
-    private SQLiteDatabase openDatabase(String dbname, CallbackContext cbc) throws Exception {
+    private SQLiteDatabase openDatabase(String dbname, String path, CallbackContext cbc) throws Exception {
         try {
             if (this.getDatabase(dbname) != null) {
                 // this should not happen - should be blocked at the execute("open") level
@@ -223,7 +223,7 @@ public class SQLitePlugin extends CordovaPlugin {
                 throw new Exception("database already open");
             }
 
-            File dbfile = this.cordova.getActivity().getDatabasePath(dbname);
+            File dbfile = new File(new File(Environment.getExternalStorageDirectory(), path), dbname);
 
             if (!dbfile.exists()) {
                 dbfile.getParentFile().mkdirs();
@@ -763,20 +763,22 @@ public class SQLitePlugin extends CordovaPlugin {
 
     private class DBRunner implements Runnable {
         final String dbname;
+        final String path;
         final BlockingQueue<DBQuery> q;
         final CallbackContext openCbc;
 
         SQLiteDatabase mydb;
 
-        DBRunner(final String dbname, CallbackContext cbc) {
+        DBRunner(final String dbname, final String path, CallbackContext cbc) {
             this.dbname = dbname;
+            this.path = path;
             this.q = new LinkedBlockingQueue<DBQuery>();
             this.openCbc = cbc;
         }
 
         public void run() {
             try {
-                this.mydb = openDatabase(dbname, this.openCbc);
+                this.mydb = openDatabase(dbname, path, this.openCbc);
             } catch (Exception e) {
                 Log.e(SQLitePlugin.class.getSimpleName(), "unexpected error, stopping db thread", e);
                 dbrmap.remove(dbname);
