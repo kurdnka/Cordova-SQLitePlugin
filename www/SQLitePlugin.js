@@ -407,7 +407,7 @@
       errorcb = null;
       if (first.constructor === String) {
         openargs = {
-          name: first
+          name: first,
           path: args[1]
         };
         if (args.length >= 6) {
