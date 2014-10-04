@@ -13,6 +13,7 @@ import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteStatement;
+import android.os.Environment;
 
 import android.util.Base64;
 import android.util.Log;
@@ -98,8 +99,9 @@ public class SQLitePlugin extends CordovaPlugin {
             case open:
                 o = args.getJSONObject(0);
                 dbname = o.getString("name");
+                path = o.getString("path");
                 // open database and start reading its queue
-                this.startDatabase(dbname, cbc);
+                this.startDatabase(dbname, path, cbc);
                 break;
 
             case close:
