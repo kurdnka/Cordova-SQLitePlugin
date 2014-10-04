@@ -94,6 +94,7 @@ public class SQLitePlugin extends CordovaPlugin {
         boolean status = true;
         JSONObject o;
         String dbname;
+        String path;
 
         switch (action) {
             case open:
