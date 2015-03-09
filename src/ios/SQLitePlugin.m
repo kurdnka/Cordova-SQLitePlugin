@@ -8,6 +8,7 @@
 
 #import "SQLitePlugin.h"
 #include <regex.h>
+#include <math.h>
 
 
 //LIBB64
@@ -154,6 +155,52 @@ static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** va
     sqlite3_result_int(context, (ret != REG_NOMATCH));
 }
 
+static void okapi_bm25(sqlite3_context *pCtx, int nVal, sqlite3_value **apVal) {
+    
+    unsigned int *matchinfo = (unsigned int *)sqlite3_value_blob(apVal[0]);
+    int searchTextCol = sqlite3_value_int(apVal[1]);
+    
+    double K1 = ((nVal >= 3) ? sqlite3_value_double(apVal[2]) : 1.2);
+    double B = ((nVal >= 4) ? sqlite3_value_double(apVal[3]) : 0.75);
+    
+    int P_OFFSET = 0;
+    int C_OFFSET = 1;
+    int N_OFFSET = 2;
+    int A_OFFSET = 3;
+    
+    int termCount = matchinfo[P_OFFSET];
+    int colCount = matchinfo[C_OFFSET];
+    
+    int L_OFFSET = (A_OFFSET + colCount);
+    int X_OFFSET = (L_OFFSET + colCount);
+    
+    double totalDocs = matchinfo[N_OFFSET];
+    double avgLength = matchinfo[A_OFFSET + searchTextCol];
+    double docLength = matchinfo[L_OFFSET + searchTextCol];
+    
+    double sum = 0.0;
+    
+    for (int i = 0; i < termCount; i++) {
+        int currentX = X_OFFSET + (3 * searchTextCol * (i + 1));
+        double termFrequency = matchinfo[currentX];
+        double docsWithTerm = matchinfo[currentX + 2];
+        
+        double idf = log(
+                         (totalDocs - docsWithTerm + 0.5) /
+                         (docsWithTerm + 0.5)
+                         );
+        
+        double rightSide = (
+                            (termFrequency * (K1 + 1)) /
+                            (termFrequency + (K1 * (1 - B + (B * (docLength / avgLength)))))
+                            );
+        
+        sum += (idf * rightSide);
+    }
+    
+    sqlite3_result_double(pCtx, sum);
+}
+
 
 @implementation SQLitePlugin
 
@@ -198,12 +245,12 @@ static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** va
     else {
         dbPointer = [openDBs objectForKey:dbname];
         if (dbPointer != NULL) {
-            // NSLog(@"Reusing existing database connection");
+            NSLog(@"Reusing existing database connection");
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Database opened"];
         }
         else {
             const char *name = [dbname UTF8String];
-            // NSLog(@"using db name: %@", dbname);
+            NSLog(@"using db name: %@", dbname);
             sqlite3 *db;
 
             if (sqlite3_open(name, &db) != SQLITE_OK) {
@@ -215,7 +262,8 @@ static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** va
                 // const char *key = [@"your_key_here" UTF8String];
                 // if(key != NULL) sqlite3_key(db, key, strlen(key));
 
-		sqlite3_create_function(db, "regexp", 2, SQLITE_ANY, NULL, &sqlite_regexp, NULL, NULL);
+                sqlite3_create_function(db, "regexp", 2, SQLITE_ANY, NULL, &sqlite_regexp, NULL, NULL);
+                sqlite3_create_function(db, "okapi_bm25", -1, SQLITE_ANY, 0, okapi_bm25, 0, 0);
 	
                 // Attempt to read the SQLite master table (test for SQLCipher version):
                 if(sqlite3_exec(db, (const char*)"SELECT count(*) FROM sqlite_master;", NULL, NULL, NULL) == SQLITE_OK) {
