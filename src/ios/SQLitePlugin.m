@@ -61,7 +61,7 @@ static int base64_encode_block(const char* plaintext_in,
 			{
 				state_in->result = result;
 				state_in->step = step_A;
-				return codechar - code_out;
+				return (int)(codechar - code_out);
 			}
 			fragment = *plainchar++;
 			result = (fragment & 0x0fc) >> 2;
@@ -72,7 +72,7 @@ static int base64_encode_block(const char* plaintext_in,
 			{
 				state_in->result = result;
 				state_in->step = step_B;
-				return codechar - code_out;
+				return (int)(codechar - code_out);
 			}
 			fragment = *plainchar++;
 			result |= (fragment & 0x0f0) >> 4;
@@ -83,7 +83,7 @@ static int base64_encode_block(const char* plaintext_in,
 			{
 				state_in->result = result;
 				state_in->step = step_C;
-				return codechar - code_out;
+				return (int)(codechar - code_out);
 			}
 			fragment = *plainchar++;
 			result |= (fragment & 0x0c0) >> 6;
@@ -127,7 +127,7 @@ static int base64_encode_blockend(char* code_out,
 	}
 	*codechar++ = '\n';
 	
-	return codechar - code_out;
+	return (int)(codechar - code_out);
 }
 
 //LIBB64---END
@@ -521,24 +521,24 @@ static void okapi_bm25(sqlite3_context *pCtx, int nVal, sqlite3_value **apVal) {
 -(void)bindStatement:(sqlite3_stmt *)statement withArg:(NSObject *)arg atIndex:(NSUInteger)argIndex
 {
     if ([arg isEqual:[NSNull null]]) {
-        sqlite3_bind_null(statement, argIndex);
+        sqlite3_bind_null(statement, (int)(argIndex));
     } else if ([arg isKindOfClass:[NSNumber class]]) {
         NSNumber *numberArg = (NSNumber *)arg;
         const char *numberType = [numberArg objCType];
         if (strcmp(numberType, @encode(int)) == 0) {
-            sqlite3_bind_int(statement, argIndex, [numberArg integerValue]);
+            sqlite3_bind_int(statement, (int)(argIndex), (int)([numberArg integerValue]));
         } else if (strcmp(numberType, @encode(long long int)) == 0) {
-            sqlite3_bind_int64(statement, argIndex, [numberArg longLongValue]);
+            sqlite3_bind_int64(statement, (int)(argIndex), [numberArg longLongValue]);
         } else if (strcmp(numberType, @encode(double)) == 0) {
-            sqlite3_bind_double(statement, argIndex, [numberArg doubleValue]);
+            sqlite3_bind_double(statement, (int)(argIndex), [numberArg doubleValue]);
         } else {
-            sqlite3_bind_text(statement, argIndex, [[NSString stringWithFormat:@"%@", arg] UTF8String], -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(statement, (int)(argIndex), [[NSString stringWithFormat:@"%@", arg] UTF8String], -1, SQLITE_TRANSIENT);
         }
     } else { // NSString
         NSString *stringArg = (NSString *)arg;
         NSData *data = [stringArg dataUsingEncoding:NSUTF8StringEncoding];
 
-          sqlite3_bind_text(statement, argIndex, data.bytes, data.length, SQLITE_TRANSIENT);
+          sqlite3_bind_text(statement, (int)(argIndex), data.bytes, (int)(data.length), SQLITE_TRANSIENT);
     }
 }
 
