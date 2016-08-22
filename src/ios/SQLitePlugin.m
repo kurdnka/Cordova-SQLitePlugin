@@ -207,20 +207,15 @@ static void okapi_bm25(sqlite3_context *pCtx, int nVal, sqlite3_value **apVal) {
 @synthesize openDBs;
 @synthesize appDocsPath;
 
--(CDVPlugin*) initWithWebView:(UIWebView*)theWebView
+-(void) pluginInitialize
 {
-    self = (SQLitePlugin*)[super initWithWebView:theWebView];
-    if (self) {
-        openDBs = [NSMutableDictionary dictionaryWithCapacity:0];
+    openDBs = [NSMutableDictionary dictionaryWithCapacity:0];
 #if !__has_feature(objc_arc)
-        [openDBs retain];
+    [openDBs retain];
 #endif
-
-        NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
-        NSLog(@"Detected docs path: %@", docs);
-        [self setAppDocsPath:docs];
-    }
-    return self;
+    NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex: 0];
+    NSLog(@"Detected docs path: %@", docs);
+    [self setAppDocsPath:docs];
 }
 
 -(id) getDBPath:(id)dbFile {
